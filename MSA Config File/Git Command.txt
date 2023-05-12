@@ -1,0 +1,36 @@
+
+
+How to setup your Git username:
+
+With the command below you can configure your user name:
+
+git config --global user.name "Fabio"
+
+How to setup your Git user email:
+
+This command lets you setup the user email address you'll use in your commits.
+
+git config --global user.email "signups@fabiopacifici.com"
+
+Git Local Repo
+Create a Folder  then open git bash
+
+Run git init command 
+
+Copy all the file  chck status
+
+git status
+
+Add the file 
+git add . or  add all the files 
+git add specific file 
+
+now chck status
+git status .
+
+Now commi the changes 
+
+git commit -m  "first commit"
+
+
+

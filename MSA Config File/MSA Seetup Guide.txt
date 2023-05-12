@@ -1,0 +1,767 @@
+
+add this as vm argument from preferences installed jres  In case inaccessible 
+security exception
+
+--add-opens java.base/java.lang=ALL-UNNAMED
+
+
+Setup data base 
+==================
+drop table Currency;
+
+create database mydb ;
+
+show databases ;
+
+use mydb;
+
+create table Currency (id int AUTO_INCREMENT PRIMARY KEY ,CONVERSION_MULTIPLE  decimal (5,2) , 
+
+ENV varchar(8),CURRENCY_FROM  varchar(5),CURRENCY_TO  varchar(5) );
+
+insert into Currency(id,conversion_multiple,env,currency_from,currency_to)
+values(10001,65,'','USD','INR');
+insert into Currency (id,conversion_multiple,env,currency_from,currency_to)
+values(10002,75,'','EUR','INR');
+insert into Currency(id,conversion_multiple,env,currency_from,currency_to)
+values(10003,25,'','AUD','INR');
+commit;
+select * from Currency;
+
+
+MSA Setp Guide
+----------------
+
+Day-1 Create the currency-exchange-service add beolw dependices
+
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-devtools</artifactId>
+<scope>runtime</scope>
+<optional>true</optional>
+</dependency>
+
+
+Change the server port and give the application name as below
+==============================================================
+server.port=8000
+spring.application.name=currency-exchange
+
+Create the controller named as  CurrencyExchangeController inside 
+com.web.springcloud.controllers package
+
+Declare a webservice method to return a response Welcome to  CurrencyExchange Service .
+
+Create a class named as CurrencyExchange  inside com.web.springcloud.bean package
+
+public class CurrencyExchange {
+	private Long id;
+	private String from;
+	private String to;
+	private BigDecimal conversionMultiple;
+	private String env;
+Genrate setter/getter/noargs constructor / parametrized constructor ,	
+}
+
+Create the controller named as  CurrencyExchangeController inside 
+com.web.springcloud.controllers package
+
+
+
+
+Add Below dependency incase of data base 
+===============================================
+
+<!-- Spring Data JPA  -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+
+<!-- MySql  driver -->
+
+<dependency>
+<groupId>mysql</groupId>
+<artifactId>mysql-connector-java</artifactId>
+ <scope>runtime</scope>
+</dependency>
+
+# Spring  Boot MySql DataSource Configuration 
+-----------------------------------------------------
+
+spring.datasource.url = jdbc:mysql://localhost:3306/mydb?useSSL=false
+spring.datasource.username = root
+spring.datasource.password = mysql
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+## Hibernate Properties
+-----------------------------
+# The SQL dialect makes Hibernate generate better SQL for the chosen database
+
+spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.MySQL5InnoDBDialect
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto = update
+
+
+Create a reposistory named as CurrencyExchangeReposistory and autowire 
+to CurrencyExchangeController
+----------------------------------------------------------------------------------------------------
+
+
+
+Create  currency-conversion-service add beolw dependices
+============================================================
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-devtools</artifactId>
+<scope>runtime</scope>
+<optional>true</optional>
+</dependency>
+
+
+
+Change the server port and give the application name as below
+==============================================================
+server.port=8100
+spring.application.name=currency-conversion
+
+
+Create a class named as CurrencyConversion  inside com.web.springcloud.bean package
+-------------------------------------------------------------------------------------
+public class CurrencyConversion {
+private Long id;
+private String from;
+private String to;
+private BigDecimal quantity;
+private BigDecimal conversionMultiple;
+private BigDecimal totalCalculatedAmount;
+private String env;
+Genrate setter/getter/noargs constructor / parametrized constructor ,	
+}
+
+
+Create the controller named as  CurrencyConversionController inside com.web.springcloud.controllers package
+------------------------------------------------------------------------------------------------------------
+@RestController
+public class CurrencyConversionController {
+private static Logger logger= LoggerFactory.getLogger(CurrencyConversion.class);
+}
+
+
+
+Creating a Eureka Server
+-------------------------
+Step-1 Create a Spring Boot application named as eureka-server and 
+Add spring-cloud-starter-netflix-eureka-server dependency
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+</dependency>
+
+Step-2 
+
+Add @EnableEurekaServer annotation on top of the class  annotated with @SpringBootApllication .
+By doing so this application now acts as Service Registry all 
+other Microservices can register themselves by using this service URL
+
+Step-3 
+------
+After enabling Eureka  Service Registry add  following  configuration inside 
+application.properties file
+
+spring.application.name=eureka-server
+eureka.client.serviceUrl.defaultZone:http://localhost:8761/eureka/
+server.port=8761
+eureka.client.register-with-eureka=false
+eureka.client.fetch-registry=false
+
+Let’s Understand use of Above Properties 
+----------------------------------------------
+spring.application.name : Unique name for Eureka server service
+
+eureka.client.serviceUrl.defaultZone –  
+It consult with other Eureka server for sync the service registry as it is 
+standalone mode so we nee to give the local server address.
+
+server.port : On which port server will be bound.
+
+eureka.client.register-with-eureka 
+
+This determines is this server register itself as client as Eureka 
+server is also act as client so that it  can sync the registry.
+The value false means prevent itself act as a client.
+
+eureka.client.fetch-registry  : Not register itself in service registry
+
+Step-4
+
+Eureka server setup is completed   now run this  application and  acees the Eureka dashboard on 
+following url http://localhost:8761 it will display Eureka dashboard
+
+
+Creating as Eureka client 
+-----------------------------
+
+Step-1 Add spring-cloud-starter-netflix-eureka-client  dependency  
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+
+Modify the POM.xml file with below code 
+------------------------------------------
+<dependencyManagement>
+<dependencies>
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-dependencies</artifactId>
+<version>2020.0.2</version>
+<type>pom</type>
+<scope>import</scope>
+</dependency>
+</dependencies>
+</dependencyManagement>
+
+Step-2
+
+After this use @EnableEurekaClient annotation on top of the class  annotated with @SpringBootApllication .
+The @EnableEurekaClient annotation makes your Spring Boot application act as a Eureka client.
+@EnableEurekaClient annotation is optional if we have the spring-cloud-starter-netflix-eureka-client dependency on the classpath.
+
+
+Step-3 
+
+After enabling the discovery client, add following configuration inside application.properties file
+
+spring.application.name=client-service 
+server.port=8100 
+
+eureka.client.service-url.default-zone=http://localhost:8761/eureka 
+
+Here we configured
+Spring application name to uniquely identify our client in the list of registered applications 
+the port of Eureka client and the URL of Eureka Service.
+
+Step-4
+
+Now start the Eureka client application it will register to the Eureka service
+
+
+
+
+Day-2
+----------------------------
+
+Steps to use Spring Cloud OpenFeign dependency 
+
+Step-1 Add Spring Cloud OpenFeign dependency
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+
+
+
+Step-2  :  Add @EnableFeignClients Annotation to the class annotated with @SpringBootApplication annotation.
+
+Steps to implement load balancing
+----------------------------------
+Step-1 To enable Spring Cloud Load Balancer,  add spring-cloud-starter-loadbalancer  dependency  
+in POM.XML .
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+
+Step-2
+
+Remove URL attribute from  @FeignClient annotation 
+@FeignClient(name = "currency-exchange")
+
+ 
+ 
+Step-3 
+
+Register multiple instance of the Microservice application to Eureka Service 
+
+You can register multiple instance of same Microservice by passing configuration argument to 
+virtual machine as given below
+
+Run as configuration and pass the VM argument -Dserver.port=8001
+
+OR via Command-line Argument
+
+Below is an example of how you can start up your Spring Boot application and set the server.port 
+number property via a command-line argument.
+
+Move inside spring boot application to be run then run below command 
+-----------------------------------------------------------------------
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8001
+
+Complete Example 
+
+D:\StsSabreWs\currency-exchange-microservice>mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8001
+
+
+URL and Response Structure for Currency Conversion Service 
+
+URL
+http://localhost:8100/currency-conversion/from/USD/to/INR/quantity/10
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+
+-Dserver.port=someserverport
+
+
+
+Steps to create Config Server to read global properties from Local File System
+--------------------------------------------------------------------------------
+
+Step-1 
+
+Create a Spring Boot application and add spring-cloud-config-server dependency
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-config-server</artifactId>
+</dependency>
+
+Step-2
+ Add below filtering configuration in pom.xml file
+
+<resources> <resource><filtering>true</filtering>
+<directory>src/main/resources</directory>
+<includes> <include>*.properties</include>
+<include>common-config/</include></includes>
+</resource> </resources>
+
+Step-3 
+
+Create a folder named common-config, and inside it create the application.properties. 
+
+This is where we will store the global common properties to be used by other microservices.
+
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
+
+Step-4 
+
+Define the configuration properties in application.properties. 
+
+spring.profiles.active=native
+server.port=8888
+spring.cloud.config.server.native.search-locations=classpath:/common-config
+
+The spring.profiles.active=native property tells the Spring Cloud Config  module
+ to look for the externalized properties locally.
+
+Step-5 
+
+Add @EnableConfigServer annotation on top of the class  annotated with @SpringBootApllication 
+by doing this tis the module will act as a config server.
+
+Steps Required to Microservices to  retrieve global properties from Config Server.
+-------------------------------------------------------------------------------------
+Step-1
+
+Add the spring-cloud-starter-config dependency
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-config</artifactId>
+</dependency>
+
+Step-2
+
+Add below configuration inside application.properties file 
+
+spring.config.import=optional:configserver:http://localhost:8888
+
+
+
+
+Git Reposistory
+-----------------
+
+
+How to setup your Git username:
+
+With the command below you can configure your user name:
+
+git config --global user.name "Fabio"
+
+How to setup your Git user email:
+---------------------------------
+This command lets you setup the user email address you'll use in your commits.
+
+git config --global user.email "signups@fabiopacifici.com"
+
+Git Local Repo
+Create a Folder gitlocalrepo then open git bash
+
+Run git init command 
+
+Copy paste all the file  chck status
+
+git status
+
+Add the file
+ 
+git add . 
+
+or  add all the files 
+
+git add specific file 
+
+now chck status
+
+git status.
+
+Now commi the changes 
+
+git commit -m  "first commit"
+
+
+
+spring.cloud.config.server.git.uri=file:///D:/gitlocalrepo/
+
+
+currency-conversion.properties
+--------------------------------------------
+
+eureka.client.service-url.default-zone=http://localhost:8761/eureka 
+eureka.instance.prefer-ip-address=true
+
+
+currency-exchange.properties
+-------------------------------
+
+eureka.client.service-url.default-zone=http://localhost:8761/eureka 
+eureka.instance.prefer-ip-address=true
+
+spring.datasource.url = jdbc:mysql://localhost:3306/mydb?useSSL=false
+spring.datasource.username = root
+spring.datasource.password = mysql
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.MySQL5InnoDBDialect
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto = update
+
+
+http://localhost:8888/currency-conversion.properties
+http://localhost:8888/currency-exchange.properties
+
+spring.cloud.config.server.git.uri=file:///D:/gitlocalrepo/
+spring.profiles.active=git
+
+Day-3
+--------------
+Steps to Create Spring Cloud Gateway
+
+Step-1 
+--------
+Create a Spring Boot application api-gateway and add spring-cloud-starter-gateway dependency
+Also Add spring-cloud-starter-netflix-eureka-client  dependency  and spring Boot dev Tools dependencies
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+
+Step-2
+-------
+
+Use @EnableEurekaClient annotation on top of the class  annotated with @SpringBootApllication .
+@EnableEurekaClient annotation makes your Spring Boot application act as a Eureka client.
+
+Step-3 
+--------
+
+After enabling the discovery client, add  following  configuration inside 
+application.properties file
+
+server.port=8765
+spring.application.name=api-gateway
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
+spring.cloud.gateway.discovery.locator.enabled=true
+eureka.instance.prefer-ip-address=true
+
+Important Properties
+
+eureka.instance.prefer-ip-address=true 
+In some cases, it is preferable for Eureka to advertise the IP addresses of services 
+rather than the hostname.
+
+spring.cloud.gateway.discovery.locator.enabled=true
+
+The Gateway can be configured to create routes based on services registered with a 
+Discovery Client compatible service registry to enable this, set this property to true.
+
+
+
+
+Step-4
+------
+
+Now start the  API Gateway Server.
+
+
+
+For Creating Custom Route
+-------------------------
+
+@Configuration
+public class ApiGatewayConfiguration {
+
+@Bean
+public RouteLocator gatewayRouter(RouteLocatorBuilder builder) {
+return builder.routes()
+.route(p -> p.path("/get")
+.filters(f -> f.addRequestHeader("MyHeader", "MyURI").addRequestParameter("Param", "MyValue"))
+.uri("http://httpbin.org:80"))
+.build();
+}
+	
+	/*
+	 * @Bean public RouteLocator gatewayRouter(RouteLocatorBuilder builder) { return
+	 * builder.routes() .route(p -> p.path("/get") .filters(f ->
+	 * f.addRequestHeader("MyHeader", "MyURI").addRequestParameter("Param",
+	 * "MyValue")) .uri("http://httpbin.org:80")) .route(p ->
+	 * p.path("/currency-exchange/**").uri("lb://currency-exchange")) .route(p ->
+	 * p.path("/currency-conversion/**").uri("lb://currency-conversion")) .route(p
+	 * -> p.path("/currency-conversion-feign/**").uri("lb://currency-conversion")).
+	 * build(); }
+	 */
+
+// Creating custom route
+@Bean
+public RouteLocator gatewayRouter1(RouteLocatorBuilder builder) {
+return builder.routes()
+.route(p -> p.path("/currency-exchange/**").uri("lb://currency-exchange"))
+.route(p -> p.path("/currency-conversion/**").uri("lb://currency-conversion"))
+.route(p -> p.path("/currency-conversion-feign/**").uri("lb://currency-conversion")).build();
+}
+
+}
+
+
+Day 4 
+---------
+
+User resilience4j  inside currenecy-exchange 
+--------------------------------------------
+
+<!-- 	AOP and actuator dependencies is required for using resilience4j -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+		  
+		   
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+		
+<dependency>
+<groupId>io.github.resilience4j</groupId>
+<artifactId>resilience4j-spring-boot2</artifactId>
+  <version>1.7.0</version>
+</dependency>
+
+#Change Default retry configuration
+---------------------------------------
+resilience4j.retry.instances.sample-api.max-attempts=5
+resilience4j.retry.instances.sample-api.waitDuration=1s
+
+#for rateLimter confuring only 2 request to the api method in 10 seconds 
+--------------------------------------------------------------------------
+resilience4j.ratelimiter.instances.default.limitForPeriod=2
+resilience4j.ratelimiter.instances.default.limitRefreshPeriod=10s
+
+#for circuitbreaker
+----------------------
+
+
+management.health.circuitbreakers.enabled=true
+management.endpoints.web.exposure.include=health
+management.endpoint.health.show-details=always
+
+resilience4j.circuitbreaker.instances.currency_exchange_service.register-health-indicator=true
+resilience4j.circuitbreaker.instances.currency_exchange_service.eventConsumerBufferSize= 10
+resilience4j.circuitbreaker.instances.currency_exchange_service.automaticTransitionFromOpenToHalfOpenEnabled= true
+resilience4j.circuitbreaker.instances.currency_exchange_service.failureRateThreshold= 50
+resilience4j.circuitbreaker.instances.currency_exchange_service.minimumNumberOfCalls: 5
+resilience4j.circuitbreaker.instances.currency_exchange_service.permittedNumberOfCallsInHalfOpenState= 3
+resilience4j.circuitbreaker.instances.currency_exchange_service.waitDurationInOpenState=5s
+resilience4j.circuitbreaker.instances.currency_exchange_service.slidingWindowSize= 10
+resilience4j.circuitbreaker.instances.currency_exchange_service.slidingWindowType= COUNT_BASED
+
+
+
+
+CLOSED – This is the normal state in which all requests flow through the circuit without any restriction.
+
+OPEN – For the past n number of requests (or) n number of seconds, if the failures / slow response rate is 
+
+equal to or greater than a configurable threshold, the circuit opens. 
+In this state all calls will be restricted with CallNotPermittedException.
+
+
+HALF_OPEN 
+
+After a configurable wait time in OPEN State, the circuit breaker allows a small number of (configurable) 
+requests to pass through. In the HALF_OPEN state:
+If the failures / slow responses are above the threshold, it moves back to OPEN state and wait again.
+If the failures / slow response are below the threshold, it moves to CLOSED state and functions normally.
+
+
+
+registerHealthIndicator: 
+----------------------------
+By default the CircuitBreaker or RateLimiter health indicators are disabled, 
+but we can enable them via the configuration by setting it true.
+
+slidingWindowType: 
+--------------------
+COUNT_BASED/TIME_BASED. Configures the type of the sliding window which is used to record 
+the outcome of calls when the CircuitBreaker is closed
+Default value is COUNT_BASED.
+
+slidingWindowSize:
+----------------------
+Configures the size of the sliding window which is used to record the outcome of calls when the CircuitBreaker is closed. 
+Its value will be in count based if slidingWindowType is COUNT_BASED.
+Its value will be in seconds based if slidingWindowType is TIME_BASED.
+Default value is 100.
+
+permittedNumberOfCallsInHalfOpenState: 
+---------------------------------------------
+Configures the number of permitted calls when the CircuitBreaker is half open.
+Default value is 10.
+
+minimumNumberOfCalls:
+--------------------------
+Configures the minimum number of calls which are required (per sliding window  period) before the 
+CircuitBreaker can calculate the error rate.
+Default value is 100
+
+waitDurationInOpenState: 
+------------------------
+Configures the wait duration (in seconds) which specifies how long the  CircuitBreaker should stay open, 
+before it switches to half open.
+Default value is 60 seconds.
+
+slowCallRateThreshold: 
+-------------------------
+Configures a threshold in percentage. The CircuitBreaker considers a  call as slow when the call duration is 
+greater than  slowCallDurationThreshold
+Default value is 100.
+
+slowCallDurationThreshold: 
+-------------------------------
+Configures the duration threshold (seconds) above which calls are considered as slow and increase the slow calls percentage.
+Default value is 60.
+failureRateThreshold: Configures the failure rate threshold in percentage. If the failure rate  is equal or greater than the threshold the CircuitBreaker transitions  to open and starts short-circuiting calls.
+Default value is 50.
+
+Refere below link for complete documentation 
+------------------------------------------------
+https://resilience4j.readme.io/docs/getting-started
+
+
+Steps to Implement Distributed Tracing using Spring Cloud Sleuth 
+-------------------------------------------------------------------------
+
+
+Step-1 Add spring-cloud-starter-sleuth dependency in all  the microservices. 
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-sleuth</artifactId>
+</dependency>
+
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-sleuth-zipkin</artifactId>
+</dependency>
+
+Step-2 Add below configuration properties in application.properties. 
+
+spring.sleuth.sampler.probability=1
+
+By default, Spring Sleuth only sends 10% of requests to Zipkin. 
+By setting this property we can tell Sleuth to  send all the requests to zipkin.
+
+Step-3 Now send  request to the Microservices the log will be printed on the console of
+the Microservices.
+
+
+Steps to run zipkin Server 
+----------------------------------
+
+Run the Zipkin Jar to start zipkin server 
+
+Use Below option 
+
+java -jar zipkin-server-2.23.2-exec.jar 
+
+
+Access Zipkin Dash Board using below URL .
+
+http://localhost:9411/zipkin 
+
+
+Steps Required to Microservices to  log information  to  zipkin Server.
+--------------------------------------------------------------------------
+
+Step-1: Add the spring-cloud-sleuth-zipkin dependency
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-sleuth-zipkin</artifactId>
+</dependency>
+
+Step-2 : Add below configuration inside application.properties file 
+
+spring.zipkin.base-url=http://localhost:9411/
+
+
+
+
+
+
+
+
+
+JDK11/Above
+STS 4
+Mysql DB V 8.X Community Edition 
+POStMan Restclient  (Desktop APP)
+
+GIT  V 2.x
+Maven V 3.x 
