@@ -1,0 +1,48 @@
+http://localhost:9191/empapi/emps
+// 20230428024901
+// http://localhost:9191/empapi/emps.json
+
+[
+  {
+    "employeeId": 101,
+    "name": "Jack",
+    "salary": 10000.0,
+    "designation": "IT"
+  },
+  {
+    "employeeId": 102,
+    "name": "Adam",
+    "salary": 20000.0,
+    "designation": "COMP"
+  },
+  {
+    "employeeId": 103,
+    "name": "joe",
+    "salary": 30000.0,
+    "designation": "Cleark"
+  }
+]
+
+<List xmlns="">
+<item>
+<employeeId>101</employeeId>
+<name>Jack</name>
+<salary>10000.0</salary>
+<designation>IT</designation>
+</item>
+<item>
+<employeeId>102</employeeId>
+<name>Adam</name>
+<salary>20000.0</salary>
+<designation>COMP</designation>
+</item>
+<item>
+<employeeId>103</employeeId>
+<name>joe</name>
+<salary>30000.0</salary>
+<designation>Cleark</designation>
+</item>
+</List>
+
+
+
